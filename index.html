@@ -1487,7 +1487,11 @@ async function sendChatMessage() {
     const proxyUrl = '/.netlify/functions/claude';
       const res = await fetch(proxyUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': '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',
+        'anthropic-version': '2023-06-01'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
