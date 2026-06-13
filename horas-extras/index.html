@@ -331,6 +331,64 @@
 
   .empty span { display: block; font-size: 36px; margin-bottom: 10px; }
 
+  .reg-actions {
+    display: flex;
+    gap: 6px;
+    margin-left: 10px;
+  }
+
+  .reg-action-btn {
+    background: var(--surface-solid);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .reg-action-btn:hover { border-color: var(--border2); background: var(--surface); }
+  .reg-action-btn.delete:hover { border-color: #ef444460; }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: #00000090;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .modal-box {
+    background: var(--surface-solid);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 20px;
+    max-width: 360px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-box .card-title { margin-top: 0; }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .modal-actions .btn { flex: 1; }
+
+
   .resumo-mes {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -392,7 +450,7 @@
     <div class="card-title">📅 Novo Registro</div>
     <div class="field">
       <label>Data</label>
-      <input type="date" id="data-reg" />
+      <input type="date" id="data-reg" onchange="atualizarTipoDia()" />
     </div>
     <div class="row2">
       <div class="field">
@@ -432,8 +490,16 @@
         <div class="resumo-label">Dias trabalhados</div>
       </div>
       <div class="resumo-card">
-        <div class="resumo-num" id="res-hextra">0h</div>
-        <div class="resumo-label">Horas extras</div>
+        <div class="resumo-num" id="res-hextra-normal">0h</div>
+        <div class="resumo-label">Extras Seg–Sex</div>
+      </div>
+      <div class="resumo-card">
+        <div class="resumo-num" id="res-hextra-sabado">0h</div>
+        <div class="resumo-label">Extras Sábado</div>
+      </div>
+      <div class="resumo-card">
+        <div class="resumo-num" id="res-hextra-domingo">0h</div>
+        <div class="resumo-label">Extras Dom/Feriado</div>
       </div>
     </div>
     <button class="btn btn-danger" onclick="limparHistorico()">🗑 Limpar histórico</button>
@@ -441,6 +507,43 @@
 
   <div id="lista-registros">
     <div class="empty"><span>📋</span>Nenhum registro ainda.<br>Vá em "Registrar" para começar.</div>
+  </div>
+</div>
+
+<!-- MODAL EDIÇÃO -->
+<div class="modal-overlay" id="modal-editar">
+  <div class="modal-box">
+    <div class="card-title">✏️ Editar Registro</div>
+    <div class="field">
+      <label>Data</label>
+      <input type="date" id="edit-data" />
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Entrada</label>
+        <input type="time" id="edit-entrada" />
+      </div>
+      <div class="field">
+        <label>Saída</label>
+        <input type="time" id="edit-saida" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Tipo do dia</label>
+      <select id="edit-tipo">
+        <option value="normal">Segunda a Sexta</option>
+        <option value="sabado">Sábado</option>
+        <option value="domingo">Domingo / Feriado</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Observação (opcional)</label>
+      <input type="text" id="edit-obs" placeholder="ex: obra urgente" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="fecharModalEdicao()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicao()">💾 Salvar</button>
+    </div>
   </div>
 </div>
 
@@ -622,6 +725,22 @@ function calcHorasExtras(entrada, saida, tipo) {
   return { trabalhado, esperado, extra: trabalhado - esperado };
 }
 
+// ====== AUTO TIPO DO DIA ======
+function atualizarTipoDia() {
+  const data = document.getElementById('data-reg').value;
+  if (!data) return;
+  const [ano, mes, dia] = data.split('-').map(Number);
+  const diaSemana = new Date(ano, mes - 1, dia).getDay(); // 0=domingo, 6=sábado
+  const select = document.getElementById('tipo-dia');
+  if (diaSemana === 0) {
+    select.value = 'domingo';
+  } else if (diaSemana === 6) {
+    select.value = 'sabado';
+  } else {
+    select.value = 'normal';
+  }
+}
+
 // ====== REGISTRAR ======
 function registrar() {
   const data = document.getElementById('data-reg').value;
@@ -671,17 +790,25 @@ function registrar() {
 // ====== HISTÓRICO ======
 function renderHistorico() {
   const lista = document.getElementById('lista-registros');
-  const totalExtra = registros.reduce((s, r) => s + (r.extra > 0 ? r.extra : 0), 0);
+  const somaTipo = (tipo) => registros
+    .filter(r => r.tipo === tipo && r.extra > 0)
+    .reduce((s, r) => s + r.extra, 0);
+
   document.getElementById('res-dias').textContent = registros.length;
-  document.getElementById('res-hextra').textContent = minParaHoras(totalExtra);
+  document.getElementById('res-hextra-normal').textContent = minParaHoras(somaTipo('normal'));
+  document.getElementById('res-hextra-sabado').textContent = minParaHoras(somaTipo('sabado'));
+  document.getElementById('res-hextra-domingo').textContent = minParaHoras(somaTipo('domingo'));
 
   if (registros.length === 0) {
     lista.innerHTML = '<div class="empty"><span>📋</span>Nenhum registro ainda.</div>';
     return;
   }
 
-  const sorted = [...registros].sort((a, b) => b.data.localeCompare(a.data));
-  lista.innerHTML = sorted.map((r, i) => {
+  const sorted = [...registros]
+    .map((r, idx) => ({ ...r, _idx: idx }))
+    .sort((a, b) => b.data.localeCompare(a.data));
+
+  lista.innerHTML = sorted.map((r) => {
     const cor = r.extra > 0 ? 'yellow' : r.extra < 0 ? 'red' : 'green';
     const sinal = r.extra > 0 ? '+' : '';
     const tipoLabel = { normal: 'Dia normal', sabado: 'Sábado', domingo: 'Dom/Feriado' };
@@ -694,6 +821,10 @@ function renderHistorico() {
         <div class="reg-horas" style="color: var(--${cor === 'yellow' ? 'accent' : cor === 'red' ? 'danger' : 'accent2'})">
           ${sinal}${minParaHoras(r.extra)}
         </div>
+        <div class="reg-actions">
+          <div class="reg-action-btn" onclick="editarRegistro(${r._idx})" title="Editar">✏️</div>
+          <div class="reg-action-btn delete" onclick="excluirRegistro(${r._idx})" title="Excluir">🗑</div>
+        </div>
       </div>
     `;
   }).join('');
@@ -702,6 +833,56 @@ function renderHistorico() {
 function limparHistorico() {
   if (confirm('Apagar todos os registros?')) {
     registros = [];
+    localStorage.setItem('horas-registros', JSON.stringify(registros));
+    renderHistorico();
+  }
+}
+
+// ====== EDITAR / EXCLUIR REGISTRO ======
+let editandoIdx = null;
+
+function editarRegistro(idx) {
+  const r = registros[idx];
+  if (!r) return;
+  editandoIdx = idx;
+  document.getElementById('edit-data').value = r.data;
+  document.getElementById('edit-entrada').value = r.entrada;
+  document.getElementById('edit-saida').value = r.saida;
+  document.getElementById('edit-tipo').value = r.tipo;
+  document.getElementById('edit-obs').value = r.obs || '';
+  document.getElementById('modal-editar').classList.add('active');
+}
+
+function fecharModalEdicao() {
+  editandoIdx = null;
+  document.getElementById('modal-editar').classList.remove('active');
+}
+
+function salvarEdicao() {
+  if (editandoIdx === null) return;
+
+  const data = document.getElementById('edit-data').value;
+  const entrada = document.getElementById('edit-entrada').value;
+  const saida = document.getElementById('edit-saida').value;
+  const tipo = document.getElementById('edit-tipo').value;
+  const obs = document.getElementById('edit-obs').value;
+
+  if (!data || !entrada || !saida) {
+    alert('Preencha todos os campos!');
+    return;
+  }
+
+  const { trabalhado, esperado, extra } = calcHorasExtras(entrada, saida, tipo);
+  registros[editandoIdx] = { data, entrada, saida, tipo, obs, trabalhado, esperado, extra };
+  localStorage.setItem('horas-registros', JSON.stringify(registros));
+
+  fecharModalEdicao();
+  renderHistorico();
+}
+
+function excluirRegistro(idx) {
+  if (confirm('Excluir este registro?')) {
+    registros.splice(idx, 1);
     localStorage.setItem('horas-registros', JSON.stringify(registros));
     renderHistorico();
   }
