@@ -570,7 +570,10 @@
         <label>H. Extras 100% - Dom/Fer (horas)</label>
         <input type="number" id="hextra-100" placeholder="0" step="0.5" />
       </div>
-      <div class="field"></div>
+      <div class="field">
+        <label>Hora Premium 100% (horas)</label>
+        <input type="number" id="hpremium-100" placeholder="0" step="0.5" />
+      </div>
     </div>
     <div class="field">
       <label>Insalubridade máximo 40%?</label>
@@ -894,6 +897,7 @@ function calcular() {
   const h55 = parseFloat(document.getElementById('hextra-55').value) || 0;
   const h70 = parseFloat(document.getElementById('hextra-70').value) || 0;
   const h100 = parseFloat(document.getElementById('hextra-100').value) || 0;
+  const hpremium = parseFloat(document.getElementById('hpremium-100').value) || 0;
   const insalub = document.getElementById('insalubridade').value === 'sim';
   const descCesta = parseFloat(document.getElementById('desc-cesta').value) || 0;
   const descAlim = parseFloat(document.getElementById('desc-alimentacao').value) || 0;
@@ -905,16 +909,17 @@ function calcular() {
   const hextra55 = h55 * valorHora * 1.55;
   const hextra70 = h70 * valorHora * 1.70;
   const hextra100 = h100 * valorHora * 2.00;
+  const hpremium100 = hpremium * valorHora * 2.00;
   const adicInsalub = insalub ? 1621 * 0.40 : 0;
-  const totalProventos = salario + hextra55 + hextra70 + hextra100 + adicInsalub;
+  const totalProventos = salario + hextra55 + hextra70 + hextra100 + hpremium100 + adicInsalub;
 
-  // INSS 2025
+  // INSS 2026 - cálculo progressivo (alíquota efetiva, com parcela a deduzir)
   let inss = 0;
-  if (totalProventos <= 1518.00) inss = totalProventos * 0.075;
-  else if (totalProventos <= 2793.88) inss = totalProventos * 0.09;
-  else if (totalProventos <= 4190.83) inss = totalProventos * 0.12;
-  else if (totalProventos <= 8157.41) inss = totalProventos * 0.14;
-  else inss = 8157.41 * 0.14;
+  if (totalProventos <= 1621.00) inss = totalProventos * 0.075;
+  else if (totalProventos <= 2902.84) inss = totalProventos * 0.09 - 24.32;
+  else if (totalProventos <= 4354.27) inss = totalProventos * 0.12 - 111.40;
+  else if (totalProventos <= 8475.55) inss = totalProventos * 0.14 - 198.49;
+  else inss = 988.09; // teto INSS 2026
 
   const baseIRRF = totalProventos - inss;
   let irrf = 0;
@@ -936,6 +941,7 @@ function calcular() {
       ${h55 > 0 ? `<div class="res-row"><span class="res-label">H. extras 55% Seg-Sex (${h55}h)</span><span class="res-value green">R$ ${hextra55.toFixed(2)}</span></div>` : ''}
       ${h70 > 0 ? `<div class="res-row"><span class="res-label">H. extras 70% Sábado (${h70}h)</span><span class="res-value green">R$ ${hextra70.toFixed(2)}</span></div>` : ''}
       ${h100 > 0 ? `<div class="res-row"><span class="res-label">H. extras 100% Dom/Fer (${h100}h)</span><span class="res-value green">R$ ${hextra100.toFixed(2)}</span></div>` : ''}
+      ${hpremium > 0 ? `<div class="res-row"><span class="res-label">Hora Premium 100% (${hpremium}h)</span><span class="res-value green">R$ ${hpremium100.toFixed(2)}</span></div>` : ''}
       ${insalub ? `<div class="res-row"><span class="res-label">Insalubridade 40%</span><span class="res-value green">R$ ${adicInsalub.toFixed(2)}</span></div>` : ''}
       <div class="res-row"><span class="res-label">Total proventos</span><span class="res-value yellow">R$ ${totalProventos.toFixed(2)}</span></div>
       <div class="res-row"><span class="res-label">INSS</span><span class="res-value red">- R$ ${inss.toFixed(2)}</span></div>
