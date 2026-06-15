@@ -930,6 +930,10 @@ function calcular() {
   else irrf = baseIRRF * 0.275 - 896.00;
   if (irrf < 0) irrf = 0;
 
+  // Redutor adicional 2026 (Lei 15.270/2025) - isenção até R$5.000 e redução gradual até R$7.350
+  const redutorAdicional = Math.max(0, 978.62 - 0.133145 * totalProventos);
+  irrf = Math.max(0, irrf - redutorAdicional);
+
   const assistencial = salario * (pctAssistencial / 100);
   const totalDescontos = inss + irrf + descCesta + descAlim + assistencial + descOutros;
   const liquido = totalProventos - totalDescontos;
