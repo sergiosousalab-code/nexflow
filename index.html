@@ -1406,7 +1406,19 @@ function selectEmoji(el, emoji) {
   document.querySelectorAll('.emoji-opt').forEach(e => e.classList.remove('selected'));
   el.classList.add('selected');
 }
-
+function toggleJulia(id) {
+  const status = confirm('Clique OK para LIGAR a Júlia ou Cancelar para DESLIGAR.');
+  const valor = status ? 'true' : 'false';
+  fetch('http://2.25.192.152:5678/webhook/julia-toggle', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: valor })
+  }).then(() => {
+    showToast('⚡', status ? 'Júlia ligada!' : 'Júlia desligada!');
+  }).catch(() => {
+    showToast('❌', 'Erro ao conectar!');
+  });
+}
 // ============================================================
 // CHAT
 // ============================================================
