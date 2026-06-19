@@ -1312,6 +1312,7 @@ function renderAgents() {
       <div class="card-footer">
         <button class="btn-test" onclick="openChat('${a.id}')">💬 Testar</button>
         <button class="btn-share" onclick="openShare('${a.id}')">🔗 Compartilhar</button>
+        <button class="btn-toggle" onclick="toggleJulia('${a.id}')" style="background:#10b981;color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;">⚡ Ligar/Desligar</button>
       </div>
     </div>
   `).join('');
