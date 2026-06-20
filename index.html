@@ -1409,7 +1409,7 @@ function selectEmoji(el, emoji) {
 function toggleJulia(id) {
   const status = confirm('Clique OK para LIGAR a Júlia ou Cancelar para DESLIGAR.');
   const valor = status ? 'true' : 'false';
-  fetch('http://2.25.192.152:5678/webhook/julia-toggle', {
+  fetch('https://n8n.eletrochop.net/webhook/julia-toggle', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: valor })
